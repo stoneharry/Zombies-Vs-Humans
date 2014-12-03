@@ -42,7 +42,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 
@@ -304,8 +303,6 @@ public class Main extends JavaPlugin implements Listener {
 			}
 		}
 		event.setJoinMessage(null);
-		Score s = objective.getScore(p.getName());
-		s.setScore(0);
 		p.setScoreboard(board);
 	}
 
