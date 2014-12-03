@@ -3,23 +3,23 @@ package stoneharry.zvh;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 
-public class gameEndCheck implements Runnable {
+public class GameEndCheck implements Runnable {
 	@Override
 	public void run() {
 		try {
-			while (!main.ShuttingDown) {
-				if (main.gameRunning && !main.resetting) {
-					int result = main.CheckForTimeUp();
-					if (main.humans.isEmpty()
+			while (!Main.ShuttingDown) {
+				if (Main.gameRunning && !Main.resetting) {
+					int result = Main.CheckForTimeUp();
+					if (Main.humans.isEmpty()
 							|| Bukkit.getServer().getOnlinePlayers().size() == 0) {
 						if (result != 0) {
 							Bukkit.broadcastMessage(ChatColor.RED
-									+ main.prefix
+									+ Main.prefix
 									+ " "
 									+ ChatColor.AQUA
 									+ "All humans have been caught! The game will end in 10 seconds...");
 						}
-						main.prepareReset();
+						Main.prepareReset();
 					}
 				}
 				Thread.sleep(1000);

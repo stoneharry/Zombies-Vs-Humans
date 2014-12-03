@@ -12,11 +12,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 
-public class handleMovement {
+public class HandleMovement {
 	private static Boolean FirstPlayerZombie = false;
 
 	public static void HandleEvent(PlayerMoveEvent event) {
-		if (main.gameRunning) {
+		if (Main.gameRunning) {
 			Player plr = event.getPlayer();
 			// Get nearby players
 			for (Entity entity : plr.getNearbyEntities(0.5, 0.5, 0.5)) {
@@ -24,15 +24,15 @@ public class handleMovement {
 					Player target = (Player) entity;
 					// Check to see if the moving person is a zombie and the
 					// other a human
-					if (main.humans.containsKey(target.getName())
-							&& !main.humans.containsKey(plr.getName())) {
+					if (Main.humans.containsKey(target.getName())
+							&& !Main.humans.containsKey(plr.getName())) {
 						if (plr.hasLineOfSight(target)) {
 							// The person will no longer be a human
-							main.humans.remove(target.getName());
+							Main.humans.remove(target.getName());
 							// Zombie caught human so give him points
-							scoreSystem.zombiePointIncrement(plr.getName());
+							ScoreSystem.zombiePointIncrement(plr.getName());
 							// Set the messages and change his name
-							Bukkit.broadcastMessage(ChatColor.RED + main.prefix
+							Bukkit.broadcastMessage(ChatColor.RED + Main.prefix
 									+ " " + ChatColor.AQUA + plr.getName()
 									+ " has infected " + target.getName() + "!");
 							target.setDisplayName("[" + ChatColor.RED
@@ -44,19 +44,19 @@ public class handleMovement {
 							target.setPlayerListName(ChatColor.RED
 									+ target.getName());
 							// Check to see if all humans have been found
-							if (main.humans.isEmpty() && main.gameRunning
-									&& !main.resetting) {
+							if (Main.humans.isEmpty() && Main.gameRunning
+									&& !Main.resetting) {
 								Bukkit.broadcastMessage(ChatColor.RED
-										+ main.prefix
+										+ Main.prefix
 										+ " "
 										+ ChatColor.AQUA
 										+ "All humans have been caught! The game will end in 10 seconds...");
-								main.prepareReset();
+								Main.prepareReset();
 							} else {
 								Bukkit.broadcastMessage(ChatColor.RED
-										+ main.prefix + " " + ChatColor.AQUA
+										+ Main.prefix + " " + ChatColor.AQUA
 										+ "There are "
-										+ String.valueOf(main.humans.size())
+										+ String.valueOf(Main.humans.size())
 										+ " humans remaining!");
 							}
 						}
@@ -68,7 +68,7 @@ public class handleMovement {
 			Collection<? extends Player> players = Bukkit.getOnlinePlayers();
 			if (players.size() > 1) {
 				// Set the time the round started
-				main.lastTime = System.currentTimeMillis();
+				Main.lastTime = System.currentTimeMillis();
 
 				// A not very random, random number generator
 				Random ran = new Random();
@@ -80,21 +80,6 @@ public class handleMovement {
 					} else {
 						FirstPlayerZombie = true;
 						x = 1;
-					}
-				}
-				if (main.useScoreSystem) {
-					if (players.size() < 5) {
-						Bukkit.broadcastMessage(ChatColor.RED
-								+ main.prefix
-								+ " "
-								+ ChatColor.AQUA
-								+ "The score system is disabled until more players join.");
-						scoreSystem.enoughPlayers = false;
-					} else {
-						Bukkit.broadcastMessage(ChatColor.RED + main.prefix
-								+ " " + ChatColor.AQUA
-								+ "The score system is enabled!");
-						scoreSystem.enoughPlayers = true;
 					}
 				}
 				Iterator<? extends Player> it = players.iterator();
@@ -116,7 +101,7 @@ public class handleMovement {
 					// If random number = player in online players, set to
 					// zombie
 					if (i == x) {
-						Bukkit.broadcastMessage(ChatColor.RED + main.prefix
+						Bukkit.broadcastMessage(ChatColor.RED + Main.prefix
 								+ " " + ChatColor.AQUA
 								+ "The game has begun and " + player.getName()
 								+ " is the first zombie!");
@@ -124,7 +109,7 @@ public class handleMovement {
 								+ ChatColor.WHITE + "] " + player.getName());
 						player.setPlayerListName(ChatColor.RED
 								+ player.getName());
-						handleRounds.handleTeleport(player, false);
+						HandleRounds.handleTeleport(player, false);
 					}
 					// Set to human
 					else {
@@ -132,13 +117,13 @@ public class handleMovement {
 								+ ChatColor.WHITE + "] " + player.getName());
 						player.setPlayerListName(ChatColor.GREEN
 								+ player.getName());
-						main.humans.put(player.getName(), player.getName());
-						handleRounds.handleTeleport(player, true);
+						Main.humans.put(player.getName(), player.getName());
+						HandleRounds.handleTeleport(player, true);
 					}
 				}
 				// Set global variables
-				main.gameRunning = true;
-				main.resetting = false;
+				Main.gameRunning = true;
+				Main.resetting = false;
 			}
 		}
 	}

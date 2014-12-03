@@ -1,5 +1,10 @@
 package stoneharry.zvh;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.Stack;
 import java.util.logging.Logger;
@@ -40,8 +45,8 @@ import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 
-public class main extends JavaPlugin implements Listener {
-	public static main instance = null;
+public class Main extends JavaPlugin implements Listener {
+	public static Main instance = null;
 	public static Logger console = null;
 	public static HashMap<String, String> humans;
 	public static Boolean gameRunning = false;
@@ -57,7 +62,6 @@ public class main extends JavaPlugin implements Listener {
 	public static int numRounds = 1;
 	public static Boolean ShuttingDown = false;
 	public static String prefix = "[Server]";
-	public static Boolean useScoreSystem = true;
 	public static String SQLAddress = "127.0.0.1";
 	public static String SQLUsername = "root";
 	public static String SQLPassword = "root";
@@ -81,7 +85,6 @@ public class main extends JavaPlugin implements Listener {
 		saveDefaultConfig();
 		timeLimit = getConfig().getInt("timeLimit");
 		prefix = getConfig().getString("ServerName");
-		useScoreSystem = getConfig().getBoolean("UseScoreSystem");
 		SQLAddress = getConfig().getString("SQLAddress");
 		SQLUsername = getConfig().getString("SQLUsername");
 		SQLPassword = getConfig().getString("SQLPassword");
@@ -115,7 +118,6 @@ public class main extends JavaPlugin implements Listener {
 	public void onDisable() {
 		// Dispose of possible large data and try to rollback
 		try {
-			scoreSystem.DropConnection();
 			resetLevelNow();
 			blocks_changed.clear();
 			humans.clear();
@@ -123,6 +125,15 @@ public class main extends JavaPlugin implements Listener {
 			ex.printStackTrace();
 		} finally {
 			ShuttingDown = true;
+		}
+		try {
+			SaveScores scores = new SaveScores(objective);
+			FileOutputStream fs = new FileOutputStream(new File("scores.cache"));
+			ObjectOutputStream os = new ObjectOutputStream(fs);
+			os.writeObject(scores);
+			fs.close();
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
 		commandConsole.sendMessage(ChatColor.AQUA + "########################");
 		commandConsole.sendMessage(ChatColor.AQUA + "[StonedZombie] "
@@ -146,29 +157,30 @@ public class main extends JavaPlugin implements Listener {
 		getServer().getPluginManager().registerEvents(this, this);
 		// Load the config
 		LoadConfig();
-		// Get MySQL connection
-		if (scoreSystem.EstablishConnection()) {
-			// Check for time up and lightning every 28 seconds
-			new Thread(new timeRemaining()).start();
-			// This thread gets a accurate game ending
-			new Thread(new gameEndCheck()).start();
-			// Annoying message
-			commandConsole.sendMessage(ChatColor.AQUA
-					+ "########################");
-			commandConsole.sendMessage(ChatColor.AQUA + "[StonedZombie] "
-					+ ChatColor.RED + " Enabled!");
-			commandConsole.sendMessage(ChatColor.AQUA
-					+ "########################");
-		} else {
-			// No point starting up
-			commandConsole.sendMessage(ChatColor.RED
-					+ "########################");
-			commandConsole.sendMessage(ChatColor.AQUA
-					+ "ERROR : MySQL connection could not be established.");
-			commandConsole.sendMessage(ChatColor.RED
-					+ "########################");
-			Bukkit.shutdown();
+		// Get scores
+		try {
+			FileInputStream fs = new FileInputStream(new File("scores.cache"));
+			ObjectInputStream os = new ObjectInputStream(fs);
+			SaveScores scores = (SaveScores) os.readObject();
+			fs.close();
+			String[] players = scores.getPlayers();
+			Integer[] points = scores.getScores();
+			int size = players.length;
+			for (int i = 0; i < size; ++i) {
+				objective.getScore(players[i]).setScore(points[i]);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
+		// Check for time up and lightning every 28 seconds
+		new Thread(new TimeRemaining()).start();
+		// This thread gets a accurate game ending
+		new Thread(new GameEndCheck()).start();
+		// Annoying message
+		commandConsole.sendMessage(ChatColor.AQUA + "########################");
+		commandConsole.sendMessage(ChatColor.AQUA + "[StonedZombie] "
+				+ ChatColor.RED + " Enabled!");
+		commandConsole.sendMessage(ChatColor.AQUA + "########################");
 	}
 
 	public static int CheckForTimeUp() {
@@ -177,7 +189,7 @@ public class main extends JavaPlugin implements Listener {
 		// See if the time elapsed is more than the time limit
 		if (result > timeLimit) {
 			for (String name : humans.values())
-				scoreSystem.incrementSurvivorScore(name);
+				ScoreSystem.incrementSurvivorScore(name);
 			Bukkit.broadcastMessage(ChatColor.RED
 					+ prefix
 					+ " "
@@ -192,7 +204,7 @@ public class main extends JavaPlugin implements Listener {
 	@EventHandler
 	public void onPlayerMove(PlayerMoveEvent event) {
 		try {
-			handleMovement.HandleEvent(event);
+			HandleMovement.HandleEvent(event);
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -219,36 +231,36 @@ public class main extends JavaPlugin implements Listener {
 	@SuppressWarnings("deprecation")
 	private static void resetLevelNow() {
 		// Reset the map by rolling back changes
-		while (!main.blocks_changed.isEmpty()) {
+		while (!Main.blocks_changed.isEmpty()) {
 			Byte b;
 			Material mat;
 			Location loc;
-			if (main.blocks_changed.size() < 3) {
-				main.console.info("ERROR: Stack size was less than 3.");
-				main.blocks_changed.clear();
+			if (Main.blocks_changed.size() < 3) {
+				Main.console.info("ERROR: Stack size was less than 3.");
+				Main.blocks_changed.clear();
 				continue;
 			}
-			Object aa = main.blocks_changed.pop();
-			Object bb = main.blocks_changed.pop();
-			Object cc = main.blocks_changed.pop();
+			Object aa = Main.blocks_changed.pop();
+			Object bb = Main.blocks_changed.pop();
+			Object cc = Main.blocks_changed.pop();
 			if (aa instanceof Byte) {
 				b = (Byte) aa;
 			} else {
-				main.console
+				Main.console
 						.info("ERROR: First pop is not a instance of a Byte.");
 				continue;
 			}
 			if (bb instanceof Material) {
 				mat = (Material) bb;
 			} else {
-				main.console
+				Main.console
 						.info("ERROR: Second pop is not a instance of a Integer.");
 				continue;
 			}
 			if (cc instanceof Location) {
 				loc = (Location) cc;
 			} else {
-				main.console
+				Main.console
 						.info("ERROR: Third pop is not a instance of a Location.");
 				continue;
 			}
@@ -265,10 +277,10 @@ public class main extends JavaPlugin implements Listener {
 		}
 
 		// Make sure the needed variables change
-		main.gameRunning = false;
-		main.resetting = false;
-		main.mark_zombies = false;
-		handleRounds.incrementRound();
+		Main.gameRunning = false;
+		Main.resetting = false;
+		Main.mark_zombies = false;
+		HandleRounds.incrementRound();
 	}
 
 	@EventHandler
@@ -278,13 +290,9 @@ public class main extends JavaPlugin implements Listener {
 		Player p = event.getPlayer();
 		if (p != null) {
 			if (p.isOnline()) {
-				handleRounds.handleTeleport(p, false);
-				scoreSystem.addPlayerToScoreIfNotExists(p.getName());
-				p.sendMessage(ChatColor.RED
-						+ prefix
-						+ " "
-						+ ChatColor.AQUA
-						+ "You can view the top scores with: /score. You can view your personal score with: /myscore.");
+				HandleRounds.handleTeleport(p, false);
+				p.sendMessage(ChatColor.RED + prefix + " " + ChatColor.AQUA
+						+ "You can view your personal score with: /myscore.");
 				if (gameRunning) {
 					p.sendMessage(ChatColor.RED
 							+ prefix
@@ -337,7 +345,6 @@ public class main extends JavaPlugin implements Listener {
 	@EventHandler
 	public void onPlayerLeave(PlayerQuitEvent event) {
 		event.setQuitMessage(null);
-		board.resetScores(event.getPlayer().getName());
 	}
 
 	// Make players immune to damage
@@ -440,11 +447,8 @@ public class main extends JavaPlugin implements Listener {
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd,
 			String commandLabel, String[] args) {
-		if (cmd.getName().equalsIgnoreCase("score")) {
-			scoreSystem.GetTopFive(sender);
-			return true;
-		} else if (cmd.getName().equalsIgnoreCase("myscore")) {
-			scoreSystem.ReturnPersonalScore(sender);
+		if (cmd.getName().equalsIgnoreCase("myscore")) {
+			ScoreSystem.ReturnPersonalScore(sender);
 			return true;
 		}
 		return false;
