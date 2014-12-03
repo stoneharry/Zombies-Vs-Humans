@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Stack;
 import java.util.logging.Logger;
 
@@ -62,13 +63,6 @@ public class Main extends JavaPlugin implements Listener {
 	public static int numRounds = 1;
 	public static Boolean ShuttingDown = false;
 	public static String prefix = "[Server]";
-	public static String SQLAddress = "127.0.0.1";
-	public static String SQLUsername = "root";
-	public static String SQLPassword = "root";
-	public static String SQLPort = "3306";
-	public static String ZombiesDB = "minecraft";
-	public static Boolean useAuthMe = false;
-	public static String AuthMeDB = "authme";
 	public static String worldName = "zombies";
 	public static Location[] RoundHumanLocations;
 	public static Location[] RoundZombieLocations;
@@ -85,13 +79,6 @@ public class Main extends JavaPlugin implements Listener {
 		saveDefaultConfig();
 		timeLimit = getConfig().getInt("timeLimit");
 		prefix = getConfig().getString("ServerName");
-		SQLAddress = getConfig().getString("SQLAddress");
-		SQLUsername = getConfig().getString("SQLUsername");
-		SQLPassword = getConfig().getString("SQLPassword");
-		SQLPort = getConfig().getString("SQLPassword");
-		ZombiesDB = getConfig().getString("ZombiesDatabase");
-		useAuthMe = getConfig().getBoolean("useAuthMe");
-		AuthMeDB = getConfig().getString("AuthMeDatabase");
 		numRounds = getConfig().getInt("NumArenas");
 		worldName = getConfig().getString("WorldName");
 
@@ -132,6 +119,7 @@ public class Main extends JavaPlugin implements Listener {
 			ObjectOutputStream os = new ObjectOutputStream(fs);
 			os.writeObject(scores);
 			fs.close();
+			os.close();
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -163,12 +151,12 @@ public class Main extends JavaPlugin implements Listener {
 			ObjectInputStream os = new ObjectInputStream(fs);
 			SaveScores scores = (SaveScores) os.readObject();
 			fs.close();
-			String[] players = scores.getPlayers();
-			Integer[] points = scores.getScores();
-			int size = players.length;
-			for (int i = 0; i < size; ++i) {
-				objective.getScore(players[i]).setScore(points[i]);
-			}
+			List<String> players = scores.getPlayers();
+			List<Integer> points = scores.getScores();
+			int size = players.size();
+			for (int i = 0; i < size; ++i)
+				objective.getScore(players.get(i)).setScore(points.get(i));
+			os.close();
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
