@@ -1,0 +1,12 @@
+name: StonedZombie
+version: 3.0
+description: Stoneharry's Zombie's Vs Human's plugin.
+author: Stoneharry
+main: stoneharry.zvh.main
+commands:
+    score:
+      description: Displays the top 5 players.
+      aliases: [scor, sco, sc, s]
+    myscore:
+      description: Returns your personal score.
+      aliases: [myscor, mysco, mysc, mys, my, m]

@@ -1,0 +1,32 @@
+# Zombies Vs Humans
+# By Stoneharry
+
+# The time limit between each round (1000 = 1 second)
+timeLimit: 300000
+# The prefix to use for each message that is broadcast
+ServerName: [Server]
+# The name of the world file (e.g: world)
+WorldName: zombies
+# Only enable this if you want to use the MySQL based score system.
+UseScoreSystem: false
+# Number of arenas - must be > 1
+NumArenas: 1
+# Here you can add variables depending on the round number
+# Format must be human/zombie, round, x/y/z. e.g: Human1x for Human spawn location, round 1, X coordinate
+Human1x: -544
+Human1y: 2
+Human1z: -1430
+Zombie1x: -544
+Zombie1y: 16
+Zombie1z: -1430
+# NOTE:
+# Only change the following settings if you have UseScoreSystem set to true.
+# Creation of MySQL tables is currently not supported so it is NOT recommended to use MySQL.
+SQLAddress: 127.0.0.1
+SQLUsername: root
+SQLPassword: root
+SQLPort: 3306
+ZombiesDatabase: minecraft
+# Use AuthMe login system for points? This can only be used if MySQL is enabled.
+useAuthMe: false
+AuthMeDatabase: authme
