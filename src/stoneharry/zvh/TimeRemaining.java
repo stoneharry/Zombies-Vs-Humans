@@ -41,7 +41,7 @@ public class TimeRemaining implements Runnable {
 									+ " "
 									+ ChatColor.AQUA
 									+ "The lightning shows where the remaining humans are!");
-							for (String name : Main.humans.values()) {
+							for (String name : Main.humans) {
 								Player player = Bukkit.getPlayer(name);
 								if (player != null) {
 									if (player.isOnline()) {
@@ -61,7 +61,7 @@ public class TimeRemaining implements Runnable {
 					// Check for offline humans and remove them if found
 					if (!Main.humans.isEmpty()) {
 						ArrayList<String> NamesToRemove = new ArrayList<String>();
-						for (String name : Main.humans.values()) {
+						for (String name : Main.humans) {
 							if (Bukkit.getPlayer(name) == null) {
 								NamesToRemove.add(name);
 							} else {

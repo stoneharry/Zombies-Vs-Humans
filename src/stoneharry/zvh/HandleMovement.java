@@ -24,8 +24,8 @@ public class HandleMovement {
 					Player target = (Player) entity;
 					// Check to see if the moving person is a zombie and the
 					// other a human
-					if (Main.humans.containsKey(target.getName())
-							&& !Main.humans.containsKey(plr.getName())) {
+					if (Main.humans.contains(target.getName())
+							&& !Main.humans.contains(plr.getName())) {
 						if (plr.hasLineOfSight(target)) {
 							// The person will no longer be a human
 							Main.humans.remove(target.getName());
@@ -117,7 +117,7 @@ public class HandleMovement {
 								+ ChatColor.WHITE + "] " + player.getName());
 						player.setPlayerListName(ChatColor.GREEN
 								+ player.getName());
-						Main.humans.put(player.getName(), player.getName());
+						Main.humans.add(player.getName());
 						HandleRounds.handleTeleport(player, true);
 					}
 				}

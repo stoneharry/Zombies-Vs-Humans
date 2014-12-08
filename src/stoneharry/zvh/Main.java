@@ -5,7 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Stack;
 import java.util.logging.Logger;
@@ -48,7 +48,7 @@ import org.bukkit.scoreboard.ScoreboardManager;
 public class Main extends JavaPlugin implements Listener {
 	public static Main instance = null;
 	public static Logger console = null;
-	public static HashMap<String, String> humans;
+	public static HashSet<String> humans;
 	public static Boolean gameRunning = false;
 	public static Boolean resetting = true;
 	public static Stack<Object> blocks_changed = new Stack<Object>();
@@ -138,7 +138,7 @@ public class Main extends JavaPlugin implements Listener {
 		objective.setDisplayName(ChatColor.AQUA + "High Scores");
 		instance = this;
 		console = Logger.getLogger("Minecraft");
-		humans = new HashMap<String, String>();
+		humans = new HashSet<String>();
 		commandConsole = Bukkit.getServer().getConsoleSender();
 		// Register events
 		getServer().getPluginManager().registerEvents(this, this);
@@ -175,7 +175,7 @@ public class Main extends JavaPlugin implements Listener {
 		long result = System.currentTimeMillis() - lastTime;
 		// See if the time elapsed is more than the time limit
 		if (result > timeLimit) {
-			for (String name : humans.values())
+			for (String name : humans)
 				ScoreSystem.incrementSurvivorScore(name);
 			Bukkit.broadcastMessage(ChatColor.RED
 					+ prefix
@@ -296,7 +296,7 @@ public class Main extends JavaPlugin implements Listener {
 					p.getInventory().setHelmet(
 							new ItemStack(Material.JACK_O_LANTERN, 1));
 					p.updateInventory();
-					if (humans.containsKey(p.getName())) {
+					if (humans.contains(p.getName())) {
 						humans.remove(p.getName());
 					}
 				}
