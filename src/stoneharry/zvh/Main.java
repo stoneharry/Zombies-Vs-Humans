@@ -154,12 +154,12 @@ public class Main extends JavaPlugin implements Listener {
 
 	@EventHandler
 	private void OnPlayerTeleport(PlayerTeleportEvent event) {
-		if (event.getTo() != null && event.getTo().getWorld() != null) {
-			if (event.getTo().getWorld().getName().equals(worldName))
-				saveInventory(event.getPlayer(), false);
-		}/*
-		 * else if (event.getFrom() != null && event.getFrom().getWorld() !=
-		 * null) { if (event.getFrom().getWorld().getName().equals(worldName))
+		/*
+		 * if (event.getTo() != null && event.getTo().getWorld() != null) { if
+		 * (event.getTo().getWorld().getName().equals(worldName))
+		 * saveInventory(event.getPlayer(), false); } else if (event.getFrom()
+		 * != null && event.getFrom().getWorld() != null) { if
+		 * (event.getFrom().getWorld().getName().equals(worldName))
 		 * restoreInventory(event.getPlayer()); }
 		 */
 	}
@@ -405,7 +405,7 @@ public class Main extends JavaPlugin implements Listener {
 		// running, teleport.
 		if (!checkPlayer(event.getPlayer()))
 			return;
-		// saveInventory(event.getPlayer(), true);
+		saveInventory(event.getPlayer(), true);
 		event.setJoinMessage(null);
 	}
 
@@ -577,7 +577,7 @@ public class Main extends JavaPlugin implements Listener {
 				Location l = Main.RoundZombieLocations[0];
 				l.setWorld(Bukkit.getWorld(Main.worldName));
 				p.teleport(l);
-				// saveInventory(p, true);
+				saveInventory(p, true);
 			}
 		}
 		return false;
