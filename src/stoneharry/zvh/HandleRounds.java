@@ -1,13 +1,23 @@
 package stoneharry.zvh;
 
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 public class HandleRounds {
-	public static void handleTeleport(Player plr, Boolean human) {
-		if (human) {
-			plr.teleport(Main.RoundHumanLocations[Main.round - 1]);
-		} else {
-			plr.teleport(Main.RoundZombieLocations[Main.round - 1]);
+	public static void handleTeleport(Player plr, boolean human) {
+		if (plr.getWorld() != null
+				&& plr.getWorld().getName().equals(Main.worldName)) {
+			if (human) {
+				Location l = Main.RoundHumanLocations[Main.round - 1];
+				l.setWorld(Bukkit.getWorld(Main.worldName));
+				plr.teleport(l);
+			} else {
+				Location l = Main.RoundZombieLocations[Main.round - 1];
+				l.setWorld(Bukkit.getWorld(Main.worldName));
+				plr.teleport(l);
+			}
+
 		}
 	}
 

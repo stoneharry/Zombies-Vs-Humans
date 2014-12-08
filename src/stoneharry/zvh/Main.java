@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -74,6 +75,7 @@ public class Main extends JavaPlugin implements Listener {
 	private static Scoreboard board = null;
 	public static Objective objective = null;
 	private HashMap<String, ItemStack[]> inventories = new HashMap<String, ItemStack[]>();
+	private HashMap<String, ItemStack[]> armour = new HashMap<String, ItemStack[]>();
 	private String homeWorldName = null;
 	private int[] homeWorldCoords = null;
 
@@ -89,29 +91,42 @@ public class Main extends JavaPlugin implements Listener {
 	private void restoreInventory(Player p) {
 		if (p == null)
 			return;
-		ItemStack[] items = inventories.get(p.getName());
+		p.getInventory().clear();
+		p.getInventory().setArmorContents(null);
+		String name = p.getName();
+		ItemStack[] items = inventories.get(name);
+		ItemStack[] arm = armour.get(name);
 		if (items != null) {
-			p.getInventory().clear();
 			for (ItemStack item : items) {
 				if (item != null)
 					p.getInventory().addItem(item);
 			}
-			p.setDisplayName(p.getName());
-			p.setPlayerListName(p.getName());
-			humans.remove(p.getName());
-			inventories.remove(p.getName());
+			inventories.remove(name);
 		}
+		if (arm != null) {
+			p.getInventory().setArmorContents(arm);
+			armour.remove(name);
+		}
+		humans.remove(name);
+		p.setDisplayName(name);
+		p.setPlayerListName(name);
+		Scoreboard emptyBoard = manager.getNewScoreboard();
+		p.setScoreboard(emptyBoard);
 	}
 
-	private void saveInventory(Player p) {
+	private void saveInventory(Player p, boolean teleport) {
 		if (p == null)
 			return;
 		String name = p.getName();
 		inventories.put(name, p.getInventory().getContents().clone());
+		armour.put(name, p.getInventory().getArmorContents());
 		p.getInventory().clear();
+		p.getInventory().setArmorContents(null);
+		p.setGameMode(GameMode.SURVIVAL);
 		if (p.isOnline()) {
 			p.setScoreboard(board);
-			HandleRounds.handleTeleport(p, false);
+			if (teleport)
+				HandleRounds.handleTeleport(p, false);
 			p.sendMessage(ChatColor.RED + prefix + " " + ChatColor.AQUA
 					+ "You can view your personal score with: /myscore.");
 			if (gameRunning) {
@@ -141,12 +156,12 @@ public class Main extends JavaPlugin implements Listener {
 	private void OnPlayerTeleport(PlayerTeleportEvent event) {
 		if (event.getTo() != null && event.getTo().getWorld() != null) {
 			if (event.getTo().getWorld().getName().equals(worldName))
-				saveInventory(event.getPlayer());
-		} else if (event.getFrom() != null
-				&& event.getFrom().getWorld() != null) {
-			if (event.getFrom().getWorld().getName().equals(worldName))
-				restoreInventory(event.getPlayer());
-		}
+				saveInventory(event.getPlayer(), false);
+		}/*
+		 * else if (event.getFrom() != null && event.getFrom().getWorld() !=
+		 * null) { if (event.getFrom().getWorld().getName().equals(worldName))
+		 * restoreInventory(event.getPlayer()); }
+		 */
 	}
 
 	public static List<Player> getPlayers() {
@@ -295,6 +310,19 @@ public class Main extends JavaPlugin implements Listener {
 		}
 	}
 
+	@EventHandler
+	public void onPlayerQuit(PlayerQuitEvent event) {
+		if (!checkPlayer(event.getPlayer()))
+			return;
+		if (event.getPlayer() != null) {
+			event.getPlayer().teleport(
+					new Location(Bukkit.getWorld(homeWorldName),
+							homeWorldCoords[0], homeWorldCoords[1],
+							homeWorldCoords[2]));
+			restoreInventory(event.getPlayer());
+		}
+	}
+
 	// This function just sets the variable to show the round has ended but it
 	// is waiting 10 seconds
 	public static void prepareReset() {
@@ -375,7 +403,9 @@ public class Main extends JavaPlugin implements Listener {
 	public void onPlayerJoin(PlayerJoinEvent event) {
 		// When a player joins, set them to zombie and update them if game is
 		// running, teleport.
-		saveInventory(event.getPlayer());
+		if (!checkPlayer(event.getPlayer()))
+			return;
+		// saveInventory(event.getPlayer(), true);
 		event.setJoinMessage(null);
 	}
 
@@ -402,8 +432,12 @@ public class Main extends JavaPlugin implements Listener {
 	@EventHandler
 	public void onPlayerLeave(PlayerQuitEvent event) {
 		if (checkPlayer(event.getPlayer())) {
-			restoreInventory(event.getPlayer());
 			event.setQuitMessage(null);
+			event.getPlayer().teleport(
+					new Location(Bukkit.getWorld(homeWorldName),
+							homeWorldCoords[0], homeWorldCoords[1],
+							homeWorldCoords[2]));
+			restoreInventory(event.getPlayer());
 		}
 	}
 
@@ -532,6 +566,19 @@ public class Main extends JavaPlugin implements Listener {
 		if (cmd.getName().equalsIgnoreCase("myscore")) {
 			ScoreSystem.ReturnPersonalScore(sender);
 			return true;
+		} else if (cmd.getName().equalsIgnoreCase("playgame")) {
+			Player p = (Player) sender;
+			if (checkPlayer(p)) {
+				p.teleport(new Location(Bukkit.getWorld(homeWorldName),
+						homeWorldCoords[0], homeWorldCoords[1],
+						homeWorldCoords[2]));
+				restoreInventory(p);
+			} else {
+				Location l = Main.RoundZombieLocations[0];
+				l.setWorld(Bukkit.getWorld(Main.worldName));
+				p.teleport(l);
+				// saveInventory(p, true);
+			}
 		}
 		return false;
 	}

@@ -6,3 +6,6 @@ main: stoneharry.zvh.Main
 commands:
     myscore:
       description: Returns your personal score.
+commands:
+    playgame:
+      description: Teleports you to the zombies vs humans minigame.
