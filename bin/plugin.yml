@@ -1,9 +1,8 @@
 name: StonedZombie
-version: 3.0
+version: 4.0
 description: Stoneharry's Zombie's Vs Human's plugin.
 author: Stoneharry
 main: stoneharry.zvh.Main
 commands:
     myscore:
       description: Returns your personal score.
-      aliases: [myscor, mysco, mysc, mys, my, m]

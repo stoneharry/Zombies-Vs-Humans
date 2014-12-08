@@ -1,6 +1,7 @@
 package stoneharry.zvh;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -22,25 +23,31 @@ public class TimeRemaining implements Runnable {
 							seconds = seconds - 60;
 							minutes = minutes + 1;
 						}
+						List<Player> players = Bukkit.getWorld(Main.worldName)
+								.getPlayers();
 						if (minutes == 0) {
-							Bukkit.broadcastMessage(ChatColor.RED + Main.prefix
-									+ " " + ChatColor.AQUA + "There is "
-									+ String.valueOf(seconds)
-									+ " seconds remaining!");
+							for (Player p : players)
+								p.sendMessage(ChatColor.RED + Main.prefix + " "
+										+ ChatColor.AQUA + "There is "
+										+ String.valueOf(seconds)
+										+ " seconds remaining!");
 						} else {
-							Bukkit.broadcastMessage(ChatColor.RED + Main.prefix
-									+ " " + ChatColor.AQUA + "There is "
-									+ String.valueOf(minutes) + " minutes and "
-									+ String.valueOf(seconds)
-									+ " seconds remaining!");
+							for (Player p : players)
+								p.sendMessage(ChatColor.RED + Main.prefix + " "
+										+ ChatColor.AQUA + "There is "
+										+ String.valueOf(minutes)
+										+ " minutes and "
+										+ String.valueOf(seconds)
+										+ " seconds remaining!");
 						}
 						// If mark zombies put lightning on humans
 						if (Main.mark_zombies) {
-							Bukkit.broadcastMessage(ChatColor.RED
-									+ Main.prefix
-									+ " "
-									+ ChatColor.AQUA
-									+ "The lightning shows where the remaining humans are!");
+							for (Player p : players)
+								p.sendMessage(ChatColor.RED
+										+ Main.prefix
+										+ " "
+										+ ChatColor.AQUA
+										+ "The lightning shows where the remaining humans are!");
 							for (String name : Main.humans) {
 								Player player = Bukkit.getPlayer(name);
 								if (player != null) {

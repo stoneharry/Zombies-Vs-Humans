@@ -1,10 +1,8 @@
 package stoneharry.zvh;
 
-import java.util.Collection;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
@@ -18,6 +16,7 @@ public class HandleMovement {
 	public static void HandleEvent(PlayerMoveEvent event) {
 		if (Main.gameRunning) {
 			Player plr = event.getPlayer();
+			List<Player> players = Main.getPlayers();
 			// Get nearby players
 			for (Entity entity : plr.getNearbyEntities(0.5, 0.5, 0.5)) {
 				if (entity instanceof Player) {
@@ -32,9 +31,11 @@ public class HandleMovement {
 							// Zombie caught human so give him points
 							ScoreSystem.zombiePointIncrement(plr.getName());
 							// Set the messages and change his name
-							Bukkit.broadcastMessage(ChatColor.RED + Main.prefix
-									+ " " + ChatColor.AQUA + plr.getName()
-									+ " has infected " + target.getName() + "!");
+							for (Player p : players)
+								p.sendMessage(ChatColor.RED + Main.prefix + " "
+										+ ChatColor.AQUA + plr.getName()
+										+ " has infected " + target.getName()
+										+ "!");
 							target.setDisplayName("[" + ChatColor.RED
 									+ "Zombie" + ChatColor.WHITE + "] "
 									+ target.getName());
@@ -46,18 +47,22 @@ public class HandleMovement {
 							// Check to see if all humans have been found
 							if (Main.humans.isEmpty() && Main.gameRunning
 									&& !Main.resetting) {
-								Bukkit.broadcastMessage(ChatColor.RED
-										+ Main.prefix
-										+ " "
-										+ ChatColor.AQUA
-										+ "All humans have been caught! The game will end in 10 seconds...");
+								for (Player p : players)
+									p.sendMessage(ChatColor.RED
+											+ Main.prefix
+											+ " "
+											+ ChatColor.AQUA
+											+ "All humans have been caught! The game will end in 10 seconds...");
 								Main.prepareReset();
 							} else {
-								Bukkit.broadcastMessage(ChatColor.RED
-										+ Main.prefix + " " + ChatColor.AQUA
-										+ "There are "
-										+ String.valueOf(Main.humans.size())
-										+ " humans remaining!");
+								for (Player p : players)
+									p.sendMessage(ChatColor.RED
+											+ Main.prefix
+											+ " "
+											+ ChatColor.AQUA
+											+ "There are "
+											+ String.valueOf(Main.humans.size())
+											+ " humans remaining!");
 							}
 						}
 					}
@@ -65,7 +70,7 @@ public class HandleMovement {
 			}
 		} else {
 			// Check to start the game
-			Collection<? extends Player> players = Bukkit.getOnlinePlayers();
+			List<Player> players = Main.getPlayers();
 			if (players.size() > 1) {
 				// Set the time the round started
 				Main.lastTime = System.currentTimeMillis();
@@ -82,11 +87,9 @@ public class HandleMovement {
 						x = 1;
 					}
 				}
-				Iterator<? extends Player> it = players.iterator();
 				int i = -1;
-				while (it.hasNext()) {
+				for (Player player : players) {
 					++i;
-					Player player = it.next();
 					// Reset inventory
 					player.getInventory().clear();
 					player.getInventory().setArmorContents(null);
@@ -101,10 +104,12 @@ public class HandleMovement {
 					// If random number = player in online players, set to
 					// zombie
 					if (i == x) {
-						Bukkit.broadcastMessage(ChatColor.RED + Main.prefix
-								+ " " + ChatColor.AQUA
-								+ "The game has begun and " + player.getName()
-								+ " is the first zombie!");
+						for (Player p : players)
+							p.sendMessage(ChatColor.RED + Main.prefix + " "
+									+ ChatColor.AQUA
+									+ "The game has begun and "
+									+ player.getName()
+									+ " is the first zombie!");
 						player.setDisplayName("[" + ChatColor.RED + "Zombie"
 								+ ChatColor.WHITE + "] " + player.getName());
 						player.setPlayerListName(ChatColor.RED

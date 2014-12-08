@@ -17,3 +17,8 @@ Human1z: -1430
 Zombie1x: -544
 Zombie1y: 16
 Zombie1z: -1430
+# Home world
+HomeName: world
+HomeX: 72
+HomeY: 70
+HomeZ: 265

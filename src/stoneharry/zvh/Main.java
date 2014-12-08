@@ -5,7 +5,10 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
 import java.util.logging.Logger;
@@ -35,6 +38,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.inventory.ItemStack;
@@ -69,9 +73,91 @@ public class Main extends JavaPlugin implements Listener {
 	private static ScoreboardManager manager = null;
 	private static Scoreboard board = null;
 	public static Objective objective = null;
+	private HashMap<String, ItemStack[]> inventories = new HashMap<String, ItemStack[]>();
+	private String homeWorldName = null;
+	private int[] homeWorldCoords = null;
 
 	private ConsoleCommandSender commandConsole = Bukkit.getServer()
 			.getConsoleSender();
+
+	private boolean checkPlayer(Player p) {
+		if (p != null && p.getWorld().getName().equals(worldName))
+			return true;
+		return false;
+	}
+
+	private void restoreInventory(Player p) {
+		if (p == null)
+			return;
+		ItemStack[] items = inventories.get(p.getName());
+		if (items != null) {
+			p.getInventory().clear();
+			for (ItemStack item : items) {
+				if (item != null)
+					p.getInventory().addItem(item);
+			}
+			p.setDisplayName(p.getName());
+			p.setPlayerListName(p.getName());
+			humans.remove(p.getName());
+			inventories.remove(p.getName());
+		}
+	}
+
+	private void saveInventory(Player p) {
+		if (p == null)
+			return;
+		String name = p.getName();
+		inventories.put(name, p.getInventory().getContents().clone());
+		p.getInventory().clear();
+		if (p.isOnline()) {
+			p.setScoreboard(board);
+			HandleRounds.handleTeleport(p, false);
+			p.sendMessage(ChatColor.RED + prefix + " " + ChatColor.AQUA
+					+ "You can view your personal score with: /myscore.");
+			if (gameRunning) {
+				p.sendMessage(ChatColor.RED
+						+ prefix
+						+ " "
+						+ ChatColor.AQUA
+						+ "The game is in progress already - you have joined as a Zombie. You must infect as many humans as you can, just run into them!");
+				// Bukkit.broadcastMessage(ChatColor.RED + prefix + " " +
+				// ChatColor.AQUA + p.getName() +
+				// " has joined the Zombies!");
+				p.setDisplayName("[" + ChatColor.RED + "Zombie"
+						+ ChatColor.WHITE + "] " + p.getName());
+				p.setPlayerListName(ChatColor.RED + p.getName());
+				p.getInventory().addItem(new ItemStack(Material.DIRT, 20));
+				p.getInventory().setHelmet(
+						new ItemStack(Material.JACK_O_LANTERN, 1));
+				p.updateInventory();
+				if (humans.contains(p.getName())) {
+					humans.remove(p.getName());
+				}
+			}
+		}
+	}
+
+	@EventHandler
+	private void OnPlayerTeleport(PlayerTeleportEvent event) {
+		if (event.getTo() != null && event.getTo().getWorld() != null) {
+			if (event.getTo().getWorld().getName().equals(worldName))
+				saveInventory(event.getPlayer());
+		} else if (event.getFrom() != null
+				&& event.getFrom().getWorld() != null) {
+			if (event.getFrom().getWorld().getName().equals(worldName))
+				restoreInventory(event.getPlayer());
+		}
+	}
+
+	public static List<Player> getPlayers() {
+		Collection<? extends Player> plrs = Bukkit.getOnlinePlayers();
+		List<Player> returnVal = new LinkedList<Player>();
+		for (Player p : plrs) {
+			if (p.getWorld().getName().equals(worldName))
+				returnVal.add(p);
+		}
+		return returnVal;
+	}
 
 	private void LoadConfig() {
 		// The following method will not overwrite an existing file.
@@ -80,6 +166,9 @@ public class Main extends JavaPlugin implements Listener {
 		prefix = getConfig().getString("ServerName");
 		numRounds = getConfig().getInt("NumArenas");
 		worldName = getConfig().getString("WorldName");
+		homeWorldName = getConfig().getString("HomeName");
+		homeWorldCoords = new int[] { getConfig().getInt("HomeX"),
+				getConfig().getInt("HomeY"), getConfig().getInt("HomeZ") };
 
 		RoundHumanLocations = new Location[numRounds];
 		RoundZombieLocations = new Location[numRounds];
@@ -104,6 +193,12 @@ public class Main extends JavaPlugin implements Listener {
 	public void onDisable() {
 		// Dispose of possible large data and try to rollback
 		try {
+			for (Player p : getPlayers()) {
+				p.teleport(new Location(Bukkit.getWorld(homeWorldName),
+						homeWorldCoords[0], homeWorldCoords[1],
+						homeWorldCoords[2]));
+				restoreInventory(p);
+			}
 			resetLevelNow();
 			blocks_changed.clear();
 			humans.clear();
@@ -177,11 +272,12 @@ public class Main extends JavaPlugin implements Listener {
 		if (result > timeLimit) {
 			for (String name : humans)
 				ScoreSystem.incrementSurvivorScore(name);
-			Bukkit.broadcastMessage(ChatColor.RED
-					+ prefix
-					+ " "
-					+ ChatColor.AQUA
-					+ "The time limit is up, humans have won! The game will end in 10 seconds...");
+			for (Player p : getPlayers())
+				p.sendMessage(ChatColor.RED
+						+ prefix
+						+ " "
+						+ ChatColor.AQUA
+						+ "The time limit is up, humans have won! The game will end in 10 seconds...");
 			prepareReset();
 			return 0;
 		}
@@ -190,6 +286,8 @@ public class Main extends JavaPlugin implements Listener {
 
 	@EventHandler
 	public void onPlayerMove(PlayerMoveEvent event) {
+		if (!checkPlayer(event.getPlayer()))
+			return;
 		try {
 			HandleMovement.HandleEvent(event);
 		} catch (Exception ex) {
@@ -256,10 +354,13 @@ public class Main extends JavaPlugin implements Listener {
 		}
 
 		for (World world : Bukkit.getServer().getWorlds()) {
-			for (Entity e : world.getEntities()) {
-				if (e instanceof Item) {
-					e.remove();
+			if (world.getName().equals(worldName)) {
+				for (Entity e : world.getEntities()) {
+					if (e instanceof Item) {
+						e.remove();
+					}
 				}
+				break;
 			}
 		}
 
@@ -274,45 +375,16 @@ public class Main extends JavaPlugin implements Listener {
 	public void onPlayerJoin(PlayerJoinEvent event) {
 		// When a player joins, set them to zombie and update them if game is
 		// running, teleport.
-		Player p = event.getPlayer();
-		if (p != null) {
-			if (p.isOnline()) {
-				HandleRounds.handleTeleport(p, false);
-				p.sendMessage(ChatColor.RED + prefix + " " + ChatColor.AQUA
-						+ "You can view your personal score with: /myscore.");
-				if (gameRunning) {
-					p.sendMessage(ChatColor.RED
-							+ prefix
-							+ " "
-							+ ChatColor.AQUA
-							+ "The game is in progress already - you have joined as a Zombie. You must infect as many humans as you can, just run into them!");
-					// Bukkit.broadcastMessage(ChatColor.RED + prefix + " " +
-					// ChatColor.AQUA + p.getName() +
-					// " has joined the Zombies!");
-					p.setDisplayName("[" + ChatColor.RED + "Zombie"
-							+ ChatColor.WHITE + "] " + p.getName());
-					p.setPlayerListName(ChatColor.RED + p.getName());
-					p.getInventory().addItem(new ItemStack(Material.DIRT, 20));
-					p.getInventory().setHelmet(
-							new ItemStack(Material.JACK_O_LANTERN, 1));
-					p.updateInventory();
-					if (humans.contains(p.getName())) {
-						humans.remove(p.getName());
-					}
-				}
-			}
-		}
+		saveInventory(event.getPlayer());
 		event.setJoinMessage(null);
-		p.setScoreboard(board);
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerLogin(PlayerLoginEvent event) {
 		Player p = event.getPlayer();
 		if (p.isOnline()) {
-			event.disallow(
-					PlayerLoginEvent.Result.KICK_OTHER,
-					"That username is already online. Don't try to disconnect people - you will be ban.");
+			event.disallow(PlayerLoginEvent.Result.KICK_OTHER,
+					"That username is already online.");
 			return;
 		}
 		if (p.getName().contains("?")) {
@@ -329,23 +401,36 @@ public class Main extends JavaPlugin implements Listener {
 	// Prevents leave server message being spammed
 	@EventHandler
 	public void onPlayerLeave(PlayerQuitEvent event) {
-		event.setQuitMessage(null);
+		if (checkPlayer(event.getPlayer())) {
+			restoreInventory(event.getPlayer());
+			event.setQuitMessage(null);
+		}
 	}
 
 	// Make players immune to damage
 	@EventHandler
 	public void onEntityDamage(EntityDamageEvent event) {
-		event.setCancelled(true);
+		Entity e = event.getEntity();
+		if (e instanceof Player) {
+			if (checkPlayer((Player) e))
+				event.setCancelled(true);
+		}
 	}
 
 	// Prevent players getting hungry
 	@EventHandler
 	public void onFoodLevelChange(FoodLevelChangeEvent event) {
-		event.setCancelled(true);
+		Entity e = event.getEntity();
+		if (e instanceof Player) {
+			if (checkPlayer((Player) e))
+				event.setCancelled(true);
+		}
 	}
 
 	@EventHandler
 	public synchronized void onBlockPlace(BlockPlaceEvent event) {
+		if (!checkPlayer(event.getPlayer()))
+			return;
 		// If game is in progress
 		if (!resetting) {
 			Material replaced = event.getBlockReplacedState().getType();
@@ -376,6 +461,8 @@ public class Main extends JavaPlugin implements Listener {
 
 	@EventHandler
 	public synchronized void onBlockBreak(BlockBreakEvent event) {
+		if (!checkPlayer(event.getPlayer()))
+			return;
 		// If game is not resetting
 		if (!resetting) {
 			// Push the block being deleted for restorating later
@@ -407,12 +494,17 @@ public class Main extends JavaPlugin implements Listener {
 
 	@EventHandler
 	public void ignitefire(BlockIgniteEvent event) {
-		// Try to stop fire
-		event.setCancelled(true);
+		Block b = event.getBlock();
+		if (b != null && b.getWorld().getName().equals(worldName)) {
+			// Try to stop fire
+			event.setCancelled(true);
+		}
 	}
 
 	@EventHandler
 	public void onPlayerCrouch(PlayerToggleSneakEvent event) {
+		if (!checkPlayer(event.getPlayer()))
+			return;
 		// Stop crouching as it prevents name tag showing
 		event.setCancelled(true);
 	}
@@ -420,13 +512,18 @@ public class Main extends JavaPlugin implements Listener {
 	@EventHandler
 	public void onWeatherChange(WeatherChangeEvent event) {
 		// Try to stop weather
-		getServer().getWorld(worldName).setWeatherDuration(1);
-		event.setCancelled(true);
+		if (event.getWorld().getName().equals(worldName)) {
+			getServer().getWorld(worldName).setWeatherDuration(1);
+			event.setCancelled(true);
+		}
 	}
 
 	@EventHandler
 	public void stopTakeOffHelmet(InventoryClickEvent event) {
-		event.setCancelled(true);
+		if (event.getWhoClicked() instanceof Player) {
+			if (checkPlayer((Player) event.getWhoClicked()))
+				event.setCancelled(true);
+		}
 	}
 
 	@Override
