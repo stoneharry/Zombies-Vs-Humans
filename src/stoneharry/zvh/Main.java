@@ -124,8 +124,8 @@ public class Main extends JavaPlugin implements Listener {
 		p.getInventory().clear();
 		p.getInventory().setArmorContents(null);
 		p.setGameMode(GameMode.SURVIVAL);
+		p.setScoreboard(board);
 		if (p.isOnline()) {
-			p.setScoreboard(board);
 			if (teleport)
 				HandleRounds.handleTeleport(p, false);
 			p.sendMessage(ChatColor.RED + prefix + " " + ChatColor.AQUA
@@ -149,6 +149,7 @@ public class Main extends JavaPlugin implements Listener {
 				if (humans.contains(p.getName())) {
 					humans.remove(p.getName());
 				}
+				p.setScoreboard(board);
 			}
 		}
 	}
@@ -305,6 +306,7 @@ public class Main extends JavaPlugin implements Listener {
 		if (!checkPlayer(event.getPlayer()))
 			return;
 		try {
+			event.getPlayer().setScoreboard(board);
 			HandleMovement.HandleEvent(event);
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -566,11 +568,12 @@ public class Main extends JavaPlugin implements Listener {
 		Player p = event.getPlayer();
 		if (checkPlayer(p)) {
 			String message = event.getMessage();
-			if (!message.equalsIgnoreCase("myscore")
-					|| !message.equalsIgnoreCase("playgame")) {
+			if (message.equals("/myscore") || message.equals("/playgame")) {
+				event.setCancelled(false);
+			} else {
 				event.setCancelled(true);
 				p.sendMessage(ChatColor.RED
-						+ "To leave this game use /playgame");
+						+ "To leave this game mode use: /playgame");
 			}
 		}
 	}
