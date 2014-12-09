@@ -35,6 +35,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -560,6 +561,20 @@ public class Main extends JavaPlugin implements Listener {
 		}
 	}
 
+	@EventHandler
+	public void onCommandPre(PlayerCommandPreprocessEvent event) {
+		Player p = event.getPlayer();
+		if (checkPlayer(p)) {
+			String message = event.getMessage();
+			if (!message.equalsIgnoreCase("myscore")
+					|| !message.equalsIgnoreCase("playgame")) {
+				event.setCancelled(true);
+				p.sendMessage(ChatColor.RED
+						+ "To leave this game use /playgame");
+			}
+		}
+	}
+
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd,
 			String commandLabel, String[] args) {
@@ -578,6 +593,10 @@ public class Main extends JavaPlugin implements Listener {
 				l.setWorld(Bukkit.getWorld(Main.worldName));
 				p.teleport(l);
 				saveInventory(p, true);
+			}
+		} else if (cmd.getName().equalsIgnoreCase("listworlds")) {
+			for (World w : Bukkit.getWorlds()) {
+				sender.sendMessage(w.getName());
 			}
 		}
 		return false;
