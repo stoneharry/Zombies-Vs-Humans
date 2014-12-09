@@ -73,7 +73,7 @@ public class Main extends JavaPlugin implements Listener {
 	public static Location[] RoundZombieLocations;
 	public static int pillarMaxHeight = 2;
 	private static ScoreboardManager manager = null;
-	private static Scoreboard board = null;
+	public static Scoreboard board = null;
 	public static Objective objective = null;
 	private HashMap<String, ItemStack[]> inventories = new HashMap<String, ItemStack[]>();
 	private HashMap<String, ItemStack[]> armour = new HashMap<String, ItemStack[]>();
@@ -149,7 +149,6 @@ public class Main extends JavaPlugin implements Listener {
 				if (humans.contains(p.getName())) {
 					humans.remove(p.getName());
 				}
-				p.setScoreboard(board);
 			}
 		}
 	}
@@ -306,7 +305,6 @@ public class Main extends JavaPlugin implements Listener {
 		if (!checkPlayer(event.getPlayer()))
 			return;
 		try {
-			event.getPlayer().setScoreboard(board);
 			HandleMovement.HandleEvent(event);
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -473,7 +471,8 @@ public class Main extends JavaPlugin implements Listener {
 			Material replaced = event.getBlockReplacedState().getType();
 			if (replaced == Material.WATER
 					|| replaced == Material.STATIONARY_WATER
-					|| replaced == Material.LAVA) {
+					|| replaced == Material.LAVA
+					|| replaced == Material.LAVA_BUCKET) {
 				event.getPlayer().sendMessage(
 						ChatColor.RED
 								+ "You cannot place blocks in water nor lava!");
@@ -586,6 +585,11 @@ public class Main extends JavaPlugin implements Listener {
 			return true;
 		} else if (cmd.getName().equalsIgnoreCase("playgame")) {
 			Player p = (Player) sender;
+			if (p.getName().length() == 16) {
+				p.sendMessage(ChatColor.RED
+						+ "Your name is 1 character too long to join the game!");
+				return true;
+			}
 			if (checkPlayer(p)) {
 				p.teleport(new Location(Bukkit.getWorld(homeWorldName),
 						homeWorldCoords[0], homeWorldCoords[1],
