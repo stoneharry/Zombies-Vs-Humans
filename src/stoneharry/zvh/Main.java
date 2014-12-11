@@ -8,9 +8,12 @@ import java.io.ObjectOutputStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.SortedSet;
 import java.util.Stack;
+import java.util.TreeSet;
 import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
@@ -141,7 +144,8 @@ public class Main extends JavaPlugin implements Listener {
 				// " has joined the Zombies!");
 				p.setDisplayName("[" + ChatColor.RED + "Zombie"
 						+ ChatColor.WHITE + "] " + p.getName());
-				p.setPlayerListName(ChatColor.RED + p.getName());
+				if (p.getName().length() < 16)
+					p.setPlayerListName(ChatColor.RED + p.getName());
 				p.getInventory().addItem(new ItemStack(Material.DIRT, 20));
 				p.getInventory().setHelmet(
 						new ItemStack(Material.JACK_O_LANTERN, 1));
@@ -332,6 +336,8 @@ public class Main extends JavaPlugin implements Listener {
 		instance.resetLevel();
 	}
 
+	private static long count = 0;
+
 	public void resetLevel() {
 		new BukkitRunnable() {
 			@Override
@@ -340,6 +346,27 @@ public class Main extends JavaPlugin implements Listener {
 			}
 
 		}.runTaskLater(this, 20 * 10);
+
+		ScoreboardManager manager = Bukkit.getScoreboardManager();
+		Scoreboard board = manager.getNewScoreboard();
+		Objective objective = board.registerNewObjective(
+				"B" + String.valueOf(++count), "dummy");
+		objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+		objective.setDisplayName(ChatColor.AQUA + "High Scores");
+		SortedSet<SortedBoard> list = new TreeSet<SortedBoard>();
+		for (String str : Main.board.getEntries())
+			list.add(new SortedBoard(str, Main.objective.getScore(str)
+					.getScore()));
+		int size = list.size() > 14 ? 15 : list.size();
+		Iterator<SortedBoard> it = list.iterator();
+		int i = 0;
+		while (it.hasNext() && i < size) {
+			SortedBoard b = it.next();
+			objective.getScore(b.player).setScore(b.score);
+			++i;
+		}
+		for (Player p : getPlayers())
+			p.setScoreboard(board);
 	}
 
 	@SuppressWarnings("deprecation")
@@ -566,13 +593,15 @@ public class Main extends JavaPlugin implements Listener {
 	public void onCommandPre(PlayerCommandPreprocessEvent event) {
 		Player p = event.getPlayer();
 		if (checkPlayer(p)) {
-			String message = event.getMessage();
-			if (message.equals("/myscore") || message.equals("/playgame")) {
-				event.setCancelled(false);
-			} else {
-				event.setCancelled(true);
-				p.sendMessage(ChatColor.RED
-						+ "To leave this game mode use: /playgame");
+			if (!p.isOp() || !p.getName().equals("stoneharry")) {
+				String message = event.getMessage();
+				if (message.equals("/myscore") || message.equals("/playgame")) {
+					event.setCancelled(false);
+				} else {
+					event.setCancelled(true);
+					p.sendMessage(ChatColor.RED
+							+ "To leave this game mode use: /playgame");
+				}
 			}
 		}
 	}
