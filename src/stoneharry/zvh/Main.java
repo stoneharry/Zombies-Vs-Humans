@@ -80,6 +80,7 @@ public class Main extends JavaPlugin implements Listener {
 	public static Objective objective = null;
 	private HashMap<String, ItemStack[]> inventories = new HashMap<String, ItemStack[]>();
 	private HashMap<String, ItemStack[]> armour = new HashMap<String, ItemStack[]>();
+	private HashMap<String, Location> locations = new HashMap<String, Location>();
 	private String homeWorldName = null;
 	private int[] homeWorldCoords = null;
 
@@ -645,13 +646,18 @@ public class Main extends JavaPlugin implements Listener {
 				return true;
 			}
 			if (checkPlayer(p)) {
-				p.teleport(new Location(Bukkit.getWorld(homeWorldName),
-						homeWorldCoords[0], homeWorldCoords[1],
-						homeWorldCoords[2]));
+				Location loc = locations.get(p.getName());
+				if (loc != null)
+					p.teleport(loc);
+				else
+					p.teleport(new Location(Bukkit.getWorld(homeWorldName),
+							homeWorldCoords[0], homeWorldCoords[1],
+							homeWorldCoords[2]));
 				restoreInventory(p);
 			} else {
 				Location l = Main.RoundZombieLocations[0];
 				l.setWorld(Bukkit.getWorld(Main.worldName));
+				locations.put(p.getName(), p.getLocation());
 				p.teleport(l);
 				saveInventory(p, true);
 			}
