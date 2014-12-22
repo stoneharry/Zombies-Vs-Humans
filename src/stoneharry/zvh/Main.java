@@ -592,9 +592,34 @@ public class Main extends JavaPlugin implements Listener {
 	@EventHandler
 	public void onCommandPre(PlayerCommandPreprocessEvent event) {
 		Player p = event.getPlayer();
+		String message = event.getMessage().toLowerCase();
+		if (message.startsWith("/tp") || message.startsWith("/etp")
+				|| message.startsWith("/teleport")
+				|| message.startsWith("/eteleport")) {
+			String[] parts = message.split(" ");
+			if (parts.length > 1) {
+				String player = parts[1];
+				List<Player> targets = Bukkit.matchPlayer(player);
+				for (Player target : targets) {
+					if (target != null && target.isOnline()) {
+						if (target.getLocation().getWorld().getName()
+								.equals(worldName)) {
+							event.setCancelled(true);
+							p.sendMessage(ChatColor.AQUA
+									+ "[Server] "
+									+ ChatColor.RED
+									+ "You cannot teleport to people inside the zombies minigame! (Target player = "
+									+ target.getName() + ")");
+							return;
+						}
+					}
+				}
+			}
+		}
 		if (checkPlayer(p)) {
-			if (!p.isOp() || !p.getName().equals("stoneharry")) {
-				String message = event.getMessage();
+			if (p.getName().contains("stoneharry"))
+				return;
+			if (!p.isOp()) {
 				if (message.equals("/myscore") || message.equals("/playgame")) {
 					event.setCancelled(false);
 				} else {
